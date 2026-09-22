@@ -7,25 +7,25 @@ INSERT INTO users
 VALUES
 (
     'admin',
-    '$2b$10$C5S4lHqwweU5DK0S5GCQQe0oRcYsTL3Q56Pt0v4OymtoX.X8VGj2G',
+    '$2b$10$IpTB3H.X3ZOLHBVzwWxqs.3PDur1T/sUhYXrYoo1XVUykRB4WYRVC',
     'System Administrator',
     'admin'
 ),
 (
     'kamal',
-    '$2b$10$C5S4lHqwweU5DK0S5GCQQe0oRcYsTL3Q56Pt0v4OymtoX.X8VGj2G',
+    '$2b$10$IpTB3H.X3ZOLHBVzwWxqs.3PDur1T/sUhYXrYoo1XVUykRB4WYRVC',
     'Kamal Perera',
     'student'
 ),
 (
     'nimal',
-    '$2b$10$C5S4lHqwweU5DK0S5GCQQe0oRcYsTL3Q56Pt0v4OymtoX.X8VGj2G',
+    '$2b$10$IpTB3H.X3ZOLHBVzwWxqs.3PDur1T/sUhYXrYoo1XVUykRB4WYRVC',
     'Nimal Silva',
     'student'
 ),
 (
     'saman',
-    '$2b$10$C5S4lHqwweU5DK0S5GCQQe0oRcYsTL3Q56Pt0v4OymtoX.X8VGj2G',
+    '$2b$10$IpTB3H.X3ZOLHBVzwWxqs.3PDur1T/sUhYXrYoo1XVUykRB4WYRVC',
     'Saman Fernando',
     'student'
 );
