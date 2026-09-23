@@ -1,5 +1,16 @@
 const db = require("../config/db");
 
+function trimValue(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const str = value;
+  const trimmed = str.trim();
+
+  return trimmed;
+}
+
 const Course = {
 
   // Get all courses
@@ -23,18 +34,38 @@ const Course = {
   },
 
 
+  // Find a course with the same title, optionally excluding one course.
+  async findByTitle(title, excludeId = null) {
+    const trimmedTitle = trimValue(title);
+    const query = excludeId === null
+      ? "SELECT id FROM courses WHERE title = ? LIMIT 1"
+      : "SELECT id FROM courses WHERE title = ? AND id <> ? LIMIT 1";
+    const values = excludeId === null ? [trimmedTitle] : [trimmedTitle, excludeId];
+    const [rows] = await db.execute(query, values);
+
+    return rows[0];
+  },
+
+
   // Create course
   async create(course) {
 
     const {
-      title,
-      category,
-      level,
-      duration,
+      title: rawTitle,
+      category: rawCategory,
+      level: rawLevel,
+      duration: rawDuration,
       price,
-      image,
-      description,
+      image: rawImage,
+      description: rawDescription,
     } = course;
+
+    const title = trimValue(rawTitle);
+    const category = trimValue(rawCategory);
+    const level = trimValue(rawLevel);
+    const duration = trimValue(rawDuration);
+    const image = trimValue(rawImage);
+    const description = trimValue(rawDescription);
 
     const [result] = await db.execute(
       `INSERT INTO courses
@@ -59,14 +90,21 @@ const Course = {
   async update(id, course) {
 
     const {
-      title,
-      category,
-      level,
-      duration,
+      title: rawTitle,
+      category: rawCategory,
+      level: rawLevel,
+      duration: rawDuration,
       price,
-      image,
-      description,
+      image: rawImage,
+      description: rawDescription,
     } = course;
+
+    const title = trimValue(rawTitle);
+    const category = trimValue(rawCategory);
+    const level = trimValue(rawLevel);
+    const duration = trimValue(rawDuration);
+    const image = trimValue(rawImage);
+    const description = trimValue(rawDescription);
 
     const [result] = await db.execute(
       `UPDATE courses

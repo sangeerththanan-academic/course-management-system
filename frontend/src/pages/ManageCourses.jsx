@@ -49,6 +49,7 @@ function ManageCourses() {
 
   const [formData, setFormData] = useState(EMPTY_COURSE);
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
 
@@ -96,6 +97,11 @@ function ManageCourses() {
       ...formData,
       [name]: value,
     });
+
+    setFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: "",
+    }));
   };
 
 
@@ -104,6 +110,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
   };
@@ -125,6 +132,7 @@ function ManageCourses() {
     });
 
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
   };
@@ -135,6 +143,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors({});
   };
 
 
@@ -145,6 +154,7 @@ function ManageCourses() {
     event.preventDefault();
 
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
 
@@ -212,11 +222,13 @@ function ManageCourses() {
 
     } catch (error) {
 
-      // 400 = the backend rejected the data
+      const responseData = error.response?.data;
+
       setFormError(
-        error.response?.data?.message ||
+        responseData?.message ||
         "Could not save the course. Please try again."
       );
+      setFieldErrors(responseData?.errors || {});
 
     } finally {
 
@@ -318,13 +330,16 @@ function ManageCourses() {
 
                   <input
                     id="title"
-                    className="input"
+                    className={`input${fieldErrors.title ? " input-error" : ""}`}
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
                     placeholder="e.g. React"
+                    aria-invalid={Boolean(fieldErrors.title)}
+                    aria-describedby={fieldErrors.title ? "title-error" : undefined}
                   />
+                  {fieldErrors.title && <p id="title-error" className="field-error">{fieldErrors.title}</p>}
                 </div>
 
 
@@ -333,13 +348,16 @@ function ManageCourses() {
 
                   <input
                     id="category"
-                    className="input"
+                    className={`input${fieldErrors.category ? " input-error" : ""}`}
                     type="text"
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
                     placeholder="e.g. Frontend"
+                    aria-invalid={Boolean(fieldErrors.category)}
+                    aria-describedby={fieldErrors.category ? "category-error" : undefined}
                   />
+                  {fieldErrors.category && <p id="category-error" className="field-error">{fieldErrors.category}</p>}
                 </div>
 
               </div>
@@ -352,10 +370,12 @@ function ManageCourses() {
 
                   <select
                     id="level"
-                    className="input"
+                    className={`input${fieldErrors.level ? " input-error" : ""}`}
                     name="level"
                     value={formData.level}
                     onChange={handleChange}
+                    aria-invalid={Boolean(fieldErrors.level)}
+                    aria-describedby={fieldErrors.level ? "level-error" : undefined}
                   >
                     {LEVEL_OPTIONS.map((level) => (
                       <option key={level} value={level}>
@@ -363,6 +383,7 @@ function ManageCourses() {
                       </option>
                     ))}
                   </select>
+                  {fieldErrors.level && <p id="level-error" className="field-error">{fieldErrors.level}</p>}
                 </div>
 
 
@@ -371,13 +392,16 @@ function ManageCourses() {
 
                   <input
                     id="duration"
-                    className="input"
+                    className={`input${fieldErrors.duration ? " input-error" : ""}`}
                     type="text"
                     name="duration"
                     value={formData.duration}
                     onChange={handleChange}
                     placeholder="e.g. 10 Weeks"
+                    aria-invalid={Boolean(fieldErrors.duration)}
+                    aria-describedby={fieldErrors.duration ? "duration-error" : undefined}
                   />
+                  {fieldErrors.duration && <p id="duration-error" className="field-error">{fieldErrors.duration}</p>}
                 </div>
 
 
@@ -386,7 +410,7 @@ function ManageCourses() {
 
                   <input
                     id="price"
-                    className="input"
+                    className={`input${fieldErrors.price ? " input-error" : ""}`}
                     type="number"
                     min="0"
                     step="0.01"
@@ -394,7 +418,10 @@ function ManageCourses() {
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="e.g. 25000"
+                    aria-invalid={Boolean(fieldErrors.price)}
+                    aria-describedby={fieldErrors.price ? "price-error" : undefined}
                   />
+                  {fieldErrors.price && <p id="price-error" className="field-error">{fieldErrors.price}</p>}
                 </div>
 
               </div>
@@ -405,13 +432,16 @@ function ManageCourses() {
 
                 <input
                   id="image"
-                  className="input"
+                  className={`input${fieldErrors.image ? " input-error" : ""}`}
                   type="text"
                   name="image"
                   value={formData.image}
                   onChange={handleChange}
                   placeholder="https://placehold.co/300x180?text=React"
+                  aria-invalid={Boolean(fieldErrors.image)}
+                  aria-describedby={fieldErrors.image ? "image-error" : undefined}
                 />
+                {fieldErrors.image && <p id="image-error" className="field-error">{fieldErrors.image}</p>}
               </div>
 
 
@@ -420,13 +450,16 @@ function ManageCourses() {
 
                 <textarea
                   id="description"
-                  className="input"
+                  className={`input${fieldErrors.description ? " input-error" : ""}`}
                   rows="4"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Short summary of what students will learn."
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  aria-describedby={fieldErrors.description ? "description-error" : undefined}
                 />
+                {fieldErrors.description && <p id="description-error" className="field-error">{fieldErrors.description}</p>}
               </div>
 
 

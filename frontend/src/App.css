@@ -746,6 +746,21 @@ a:hover {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.input-error {
+  border-color: var(--color-danger);
+}
+
+.input-error:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.field-error {
+  margin: 0;
+  color: var(--color-error-text);
+  font-size: 0.85rem;
+}
+
 textarea.input {
   resize: vertical;
 }
@@ -766,6 +781,70 @@ textarea.input {
   margin-bottom: 26px;
 
   box-shadow: var(--shadow);
+}
+
+.filter-field {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-field label {
+  color: var(--color-dark);
+  font-size: 0.82rem;
+  font-weight: bold;
+}
+
+.filter-search-field {
+  flex-basis: 260px;
+}
+
+.price-field {
+  flex-basis: 230px;
+}
+
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-inputs .input {
+  min-width: 0;
+}
+
+.clear-filters {
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
+.active-filters {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.filter-chip {
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background-color: #eff6ff;
+  color: #1e40af;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.filter-chip:hover {
+  background-color: #dbeafe;
+}
+
+.filter-chip span {
+  margin-left: 5px;
+  font-weight: bold;
 }
 
 .filter-bar .form-group {
