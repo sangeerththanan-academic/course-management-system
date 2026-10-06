@@ -26,6 +26,41 @@ const EMPTY_COURSE = {
 
 const LEVEL_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 
+function matchesCourseId(courseId, searchTerm) {
+  const id = String(courseId ?? "").trim().toLowerCase();
+  const term = searchTerm.trim().toLowerCase();
+
+  if (!term) {
+    return true;
+  }
+
+  if (id === term) {
+    return true;
+  }
+
+  const formattedCourseId = term.match(/^c(\d+)$/);
+  const numericCourseId = Number(id);
+  const normalizedCourseIdSearch = formattedCourseId
+    ? Number(formattedCourseId[1])
+    : NaN;
+
+  return Number.isFinite(normalizedCourseIdSearch) &&
+    Number.isFinite(numericCourseId) &&
+    numericCourseId === normalizedCourseIdSearch;
+}
+
+function compareCourses(firstCourse, secondCourse, column) {
+  if (column === "id" || column === "price") {
+    return Number(firstCourse[column]) - Number(secondCourse[column]);
+  }
+
+  return String(firstCourse[column] ?? "").localeCompare(
+    String(secondCourse[column] ?? ""),
+    undefined,
+    { sensitivity: "base", numeric: true }
+  );
+}
+
 
 // Load the course list.
 async function fetchAllCourses() {
@@ -38,6 +73,11 @@ async function fetchAllCourses() {
 function ManageCourses() {
 
   const [courses, setCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedLevel, setSelectedLevel] = useState("All");
+  const [sortColumn, setSortColumn] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,6 +89,7 @@ function ManageCourses() {
 
   const [formData, setFormData] = useState(EMPTY_COURSE);
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
 
@@ -85,6 +126,64 @@ function ManageCourses() {
     setCourses(await fetchAllCourses());
   };
 
+  const categories = [
+    "All",
+    ...Array.from(
+      new Set(courses.map((course) => course.category).filter(Boolean))
+    ).sort((firstCategory, secondCategory) =>
+      firstCategory.localeCompare(secondCategory, undefined, {
+        sensitivity: "base",
+      })
+    ),
+  ];
+
+  const filteredCourses = courses.filter((course) => {
+    const search = searchTerm.trim().toLowerCase();
+    const matchesText =
+      !search ||
+      String(course.title || "").toLowerCase().includes(search) ||
+      String(course.category || "").toLowerCase().includes(search) ||
+      matchesCourseId(course.id, search);
+    const matchesCategory =
+      selectedCategory === "All" || course.category === selectedCategory;
+    const matchesLevel =
+      selectedLevel === "All" || course.level === selectedLevel;
+
+    return matchesText && matchesCategory && matchesLevel;
+  });
+
+  const sortedCourses = [...filteredCourses].sort((firstCourse, secondCourse) => {
+    if (!sortColumn) return 0;
+
+    const comparison = compareCourses(firstCourse, secondCourse, sortColumn);
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection((currentDirection) =>
+        currentDirection === "asc" ? "desc" : "asc"
+      );
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection("asc");
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("All");
+    setSelectedLevel("All");
+    setSortColumn("");
+    setSortDirection("asc");
+  };
+
+  const renderSortIndicator = (column) => {
+    if (sortColumn !== column) return "↕";
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
 
   // ---------- Form helpers ----------
 
@@ -96,6 +195,11 @@ function ManageCourses() {
       ...formData,
       [name]: value,
     });
+
+    setFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      [name]: "",
+    }));
   };
 
 
@@ -104,6 +208,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
   };
@@ -125,6 +230,7 @@ function ManageCourses() {
     });
 
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
   };
@@ -135,6 +241,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors({});
   };
 
 
@@ -145,6 +252,7 @@ function ManageCourses() {
     event.preventDefault();
 
     setFormError("");
+    setFieldErrors({});
     setError("");
     setSuccess("");
 
@@ -212,11 +320,13 @@ function ManageCourses() {
 
     } catch (error) {
 
-      // 400 = the backend rejected the data
+      const responseData = error.response?.data;
+
       setFormError(
-        error.response?.data?.message ||
+        responseData?.message ||
         "Could not save the course. Please try again."
       );
+      setFieldErrors(responseData?.errors || {});
 
     } finally {
 
@@ -297,6 +407,65 @@ function ManageCourses() {
 
         {error && <p className="error">{error}</p>}
 
+        {!loading && courses.length > 0 && (
+          <div className="filter-bar filter-bar-admin">
+            <div className="form-group">
+              <label htmlFor="courseSearch">Search</label>
+              <input
+                id="courseSearch"
+                type="text"
+                className="input"
+                placeholder="Search by title, category, or course ID..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="categoryFilter">Category</label>
+              <select
+                id="categoryFilter"
+                className="input"
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="levelFilter">Level</label>
+              <select
+                id="levelFilter"
+                className="input"
+                value={selectedLevel}
+                onChange={(event) => setSelectedLevel(event.target.value)}
+              >
+                <option value="All">All</option>
+                {LEVEL_OPTIONS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group filter-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleResetFilters}
+              >
+                Reset Filters
+              </button>
+            </div>
+          </div>
+        )}
+
 
         {/* ---------- Add / Edit form ---------- */}
 
@@ -318,13 +487,16 @@ function ManageCourses() {
 
                   <input
                     id="title"
-                    className="input"
+                    className={`input${fieldErrors.title ? " input-error" : ""}`}
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
                     placeholder="e.g. React"
+                    aria-invalid={Boolean(fieldErrors.title)}
+                    aria-describedby={fieldErrors.title ? "title-error" : undefined}
                   />
+                  {fieldErrors.title && <p id="title-error" className="field-error">{fieldErrors.title}</p>}
                 </div>
 
 
@@ -333,13 +505,16 @@ function ManageCourses() {
 
                   <input
                     id="category"
-                    className="input"
+                    className={`input${fieldErrors.category ? " input-error" : ""}`}
                     type="text"
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
                     placeholder="e.g. Frontend"
+                    aria-invalid={Boolean(fieldErrors.category)}
+                    aria-describedby={fieldErrors.category ? "category-error" : undefined}
                   />
+                  {fieldErrors.category && <p id="category-error" className="field-error">{fieldErrors.category}</p>}
                 </div>
 
               </div>
@@ -352,10 +527,12 @@ function ManageCourses() {
 
                   <select
                     id="level"
-                    className="input"
+                    className={`input${fieldErrors.level ? " input-error" : ""}`}
                     name="level"
                     value={formData.level}
                     onChange={handleChange}
+                    aria-invalid={Boolean(fieldErrors.level)}
+                    aria-describedby={fieldErrors.level ? "level-error" : undefined}
                   >
                     {LEVEL_OPTIONS.map((level) => (
                       <option key={level} value={level}>
@@ -363,6 +540,7 @@ function ManageCourses() {
                       </option>
                     ))}
                   </select>
+                  {fieldErrors.level && <p id="level-error" className="field-error">{fieldErrors.level}</p>}
                 </div>
 
 
@@ -371,13 +549,16 @@ function ManageCourses() {
 
                   <input
                     id="duration"
-                    className="input"
+                    className={`input${fieldErrors.duration ? " input-error" : ""}`}
                     type="text"
                     name="duration"
                     value={formData.duration}
                     onChange={handleChange}
                     placeholder="e.g. 10 Weeks"
+                    aria-invalid={Boolean(fieldErrors.duration)}
+                    aria-describedby={fieldErrors.duration ? "duration-error" : undefined}
                   />
+                  {fieldErrors.duration && <p id="duration-error" className="field-error">{fieldErrors.duration}</p>}
                 </div>
 
 
@@ -386,7 +567,7 @@ function ManageCourses() {
 
                   <input
                     id="price"
-                    className="input"
+                    className={`input${fieldErrors.price ? " input-error" : ""}`}
                     type="number"
                     min="0"
                     step="0.01"
@@ -394,7 +575,10 @@ function ManageCourses() {
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="e.g. 25000"
+                    aria-invalid={Boolean(fieldErrors.price)}
+                    aria-describedby={fieldErrors.price ? "price-error" : undefined}
                   />
+                  {fieldErrors.price && <p id="price-error" className="field-error">{fieldErrors.price}</p>}
                 </div>
 
               </div>
@@ -405,13 +589,16 @@ function ManageCourses() {
 
                 <input
                   id="image"
-                  className="input"
+                  className={`input${fieldErrors.image ? " input-error" : ""}`}
                   type="text"
                   name="image"
                   value={formData.image}
                   onChange={handleChange}
                   placeholder="https://placehold.co/300x180?text=React"
+                  aria-invalid={Boolean(fieldErrors.image)}
+                  aria-describedby={fieldErrors.image ? "image-error" : undefined}
                 />
+                {fieldErrors.image && <p id="image-error" className="field-error">{fieldErrors.image}</p>}
               </div>
 
 
@@ -420,13 +607,16 @@ function ManageCourses() {
 
                 <textarea
                   id="description"
-                  className="input"
+                  className={`input${fieldErrors.description ? " input-error" : ""}`}
                   rows="4"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Short summary of what students will learn."
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  aria-describedby={fieldErrors.description ? "description-error" : undefined}
                 />
+                {fieldErrors.description && <p id="description-error" className="field-error">{fieldErrors.description}</p>}
               </div>
 
 
@@ -492,6 +682,16 @@ function ManageCourses() {
 
 
           {!loading && courses.length > 0 && (
+            <p className="result-count">
+              Showing {sortedCourses.length} of {courses.length} courses
+            </p>
+          )}
+
+          {!loading && courses.length > 0 && sortedCourses.length === 0 && (
+            <p className="empty">No courses found.</p>
+          )}
+
+          {!loading && sortedCourses.length > 0 && (
 
             <div className="table-wrapper">
 
@@ -499,20 +699,44 @@ function ManageCourses() {
 
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("id")}>
+                        ID {renderSortIndicator("id")}
+                      </button>
+                    </th>
                     <th>Image</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Level</th>
-                    <th>Duration</th>
-                    <th>Price</th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("title")}>
+                        Title {renderSortIndicator("title")}
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("category")}>
+                        Category {renderSortIndicator("category")}
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("level")}>
+                        Level {renderSortIndicator("level")}
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("duration")}>
+                        Duration {renderSortIndicator("duration")}
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" className="table-sort-button" onClick={() => handleSort("price")}>
+                        Price {renderSortIndicator("price")}
+                      </button>
+                    </th>
                     <th className="table-actions-column">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
 
-                  {courses.map((course) => (
+                  {sortedCourses.map((course) => (
 
                     <tr key={course.id}>
 
