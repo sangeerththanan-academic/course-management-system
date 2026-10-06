@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS courses (
 
     price DECIMAL(10, 2) NOT NULL,
 
+    max_students INT NULL,
+
     image VARCHAR(500),
 
     description TEXT
