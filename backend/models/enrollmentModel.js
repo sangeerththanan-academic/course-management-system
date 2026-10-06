@@ -15,6 +15,19 @@ const Enrollment = {
   },
 
 
+  // Find a specific enrollment by ID
+  async findById(id) {
+    const [rows] = await db.execute(
+      `SELECT *
+       FROM enrollments
+       WHERE id = ?`,
+      [id]
+    );
+
+    return rows[0];
+  },
+
+
   // Check if student is already enrolled
   async findByStudentAndCourse(studentId, courseId) {
     const [rows] = await db.execute(
@@ -107,13 +120,20 @@ const Enrollment = {
   },
 
 
-  // Delete enrollment
-  async delete(id) {
-    const [result] = await db.execute(
-      `DELETE FROM enrollments
-       WHERE id = ?`,
-      [id]
-    );
+  // Delete enrollment by ID and optional student ownership
+  async delete(id, studentId = null) {
+    const query = studentId === null
+      ? `DELETE FROM enrollments
+         WHERE id = ?`
+      : `DELETE FROM enrollments
+         WHERE id = ?
+         AND student_id = ?`;
+
+    const params = studentId === null
+      ? [id]
+      : [id, studentId];
+
+    const [result] = await db.execute(query, params);
 
     return result;
   },

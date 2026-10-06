@@ -20,6 +20,7 @@ function CourseDetails() {
   const [success, setSuccess] = useState("");
 
   const [enrolling, setEnrolling] = useState(false);
+  const [enrolled, setEnrolled] = useState(false);
 
 
   // Read the login state from localStorage.
@@ -36,8 +37,18 @@ function CourseDetails() {
       try {
 
         const response = await api.get(`/courses/${id}`);
-
         setCourse(response.data.course);
+
+        if (studentLoggedIn) {
+          const enrollmentsResponse = await api.get("/enrollments/my");
+          const enrolledCourse = Array.isArray(enrollmentsResponse.data.enrollments)
+            ? enrollmentsResponse.data.enrollments.some(
+                (entry) => Number(entry.course_id) === Number(id)
+              )
+            : false;
+
+          setEnrolled(enrolledCourse);
+        }
 
       } catch (error) {
 
@@ -55,7 +66,7 @@ function CourseDetails() {
 
     getCourse();
 
-  }, [id]);
+  }, [id, studentLoggedIn]);
 
 
   // ---------- Enroll ----------
@@ -73,12 +84,13 @@ function CourseDetails() {
       });
 
       setSuccess(response.data.message);
+      setEnrolled(true);
 
     } catch (error) {
 
       // 409 = already enrolled. This is expected, not a crash.
       if (error.response?.status === 409) {
-
+        setEnrolled(true);
         setError(
           "You are already enrolled in this course. You can see it in My Enrollments."
         );
@@ -238,15 +250,19 @@ function CourseDetails() {
               {/* Logged in as a student: show the Enroll button */}
               {studentLoggedIn && (
                 <>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-lg"
-                    onClick={handleEnroll}
-                    disabled={enrolling}
-                  >
-                    <FaShoppingCart />
-                    {enrolling ? "Enrolling..." : "Enroll Now"}
-                  </button>
+                  {!enrolled ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-lg"
+                      onClick={handleEnroll}
+                      disabled={enrolling}
+                    >
+                      <FaShoppingCart />
+                      {enrolling ? "Enrolling..." : "Enroll Now"}
+                    </button>
+                  ) : (
+                    <p className="success">You are enrolled in this course.</p>
+                  )}
 
                   <Link to="/my-enrollments" className="btn btn-outline">
                     <FaGraduationCap />

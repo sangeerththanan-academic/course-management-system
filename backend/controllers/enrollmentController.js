@@ -153,8 +153,13 @@ const deleteEnrollment = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result =
-      await Enrollment.delete(id);
+    if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
+      return res.status(400).json({
+        message: "Invalid enrollment ID",
+      });
+    }
+
+    const result = await Enrollment.delete(id);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -178,6 +183,56 @@ const deleteEnrollment = async (req, res) => {
   }
 };
 
+// Cancel enrollment
+const cancelEnrollment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const studentId = req.user.id;
+
+    if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
+      return res.status(400).json({
+        message: "Invalid enrollment ID",
+      });
+    }
+
+    const enrollment = await Enrollment.findById(id);
+
+    if (!enrollment) {
+      return res.status(404).json({
+        message: "Enrollment not found",
+      });
+    }
+
+    if (Number(enrollment.student_id) !== Number(studentId)) {
+      return res.status(404).json({
+        message: "Enrollment not found",
+      });
+    }
+
+    const result = await Enrollment.delete(id, studentId);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Enrollment not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Enrollment cancelled successfully",
+    });
+
+  } catch (error) {
+    console.error(
+      "Error cancelling enrollment:",
+      error.message
+    );
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 
 module.exports = {
   enrollInCourse,
@@ -185,4 +240,5 @@ module.exports = {
   getCourseEnrollments,
   getAllEnrollments,
   deleteEnrollment,
+  cancelEnrollment
 };
