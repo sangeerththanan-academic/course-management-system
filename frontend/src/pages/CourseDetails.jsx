@@ -20,7 +20,7 @@ function CourseDetails() {
   const [success, setSuccess] = useState("");
 
   const [enrolling, setEnrolling] = useState(false);
-  const [enrolled, setEnrolled] = useState(false);
+  const [enrollment, setEnrollment] = useState(null);
 
   const availabilityText = course
     ? (course.max_students === null || course.max_students === undefined
@@ -49,13 +49,10 @@ function CourseDetails() {
 
         if (studentLoggedIn) {
           const enrollmentsResponse = await api.get("/enrollments/my");
-          const enrolledCourse = Array.isArray(enrollmentsResponse.data.enrollments)
-            ? enrollmentsResponse.data.enrollments.some(
-                (entry) => Number(entry.course_id) === Number(id)
-              )
-            : false;
-
-          setEnrolled(enrolledCourse);
+          const currentEnrollment = enrollmentsResponse.data.enrollments?.find(
+            (entry) => Number(entry.course_id) === Number(id)
+          );
+          setEnrollment(currentEnrollment || null);
         }
 
       } catch (error) {
@@ -92,13 +89,13 @@ function CourseDetails() {
       });
 
       setSuccess(response.data.message);
-      setEnrolled(true);
+      setEnrollment({ status: "pending" });
 
     } catch (error) {
 
       // 409 = already enrolled. This is expected, not a crash.
       if (error.response?.status === 409) {
-        setEnrolled(true);
+        setEnrollment((current) => current || { status: "approved" });
         setError(
           "You are already enrolled in this course. You can see it in My Enrollments."
         );
@@ -263,9 +260,9 @@ function CourseDetails() {
               {/* Logged in as a student: show the Enroll button */}
               {studentLoggedIn && (
                 <>
-                  {course.is_full && !enrolled ? (
+                  {course.is_full && (!enrollment || enrollment.status === "rejected") ? (
                     <p className="error">Course Full. No remaining seats are available.</p>
-                  ) : !enrolled ? (
+                  ) : !enrollment || enrollment.status === "rejected" ? (
                     <button
                       type="button"
                       className="btn btn-primary btn-lg"
@@ -273,10 +270,21 @@ function CourseDetails() {
                       disabled={enrolling || course.is_full}
                     >
                       <FaShoppingCart />
-                      {enrolling ? "Enrolling..." : "Enroll Now"}
+                      {enrolling
+                        ? "Submitting..."
+                        : enrollment?.status === "rejected"
+                          ? "Request Again"
+                          : "Request Enrollment"}
                     </button>
                   ) : (
-                    <p className="success">You are enrolled in this course.</p>
+                    <p className={enrollment.status === "approved" ? "success" : "notice"}>
+                      {enrollment.status === "approved"
+                        ? "You are enrolled in this course."
+                        : "Request Pending Approval"}
+                    </p>
+                  )}
+                  {enrollment?.status === "rejected" && enrollment.decision_note && (
+                    <p className="error">Rejected: {enrollment.decision_note}</p>
                   )}
 
                   <Link to="/my-enrollments" className="btn btn-outline">
@@ -317,4 +325,3 @@ function CourseDetails() {
 }
 
 export default CourseDetails;
-

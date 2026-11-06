@@ -19,7 +19,7 @@ function MyEnrollments() {
   const [cancellingId, setCancellingId] = useState(null);
 
   const user = getUser();
-  const total = enrollments.reduce(
+  const total = enrollments.filter((entry) => entry.status === "approved").reduce(
     (sum, enrollment) => {
       const price = Number(enrollment.price);
       return sum + (Number.isFinite(price) ? price : 0);
@@ -137,14 +137,19 @@ function MyEnrollments() {
                 : "These are the courses you are enrolled in."}
             </p>
             <p className="page-subtitle">
-              Total Enrolled Courses: {enrollments.length}
+              Confirmed Courses: {enrollments.filter((entry) => entry.status === "approved").length}
             </p>
             <p className="page-subtitle">
-              Total value of enrolled courses: Rs. {total.toLocaleString("en-IN")}
+              Confirmed course value: Rs. {enrollments
+                .filter((entry) => entry.status === "approved")
+                .reduce((sum, entry) => sum + Number(entry.price || 0), 0)
+                .toLocaleString("en-IN")}
             </p>
             <p className="page-subtitle">
               Average course price: Rs. {(
-                enrollments.length > 0 ? total / enrollments.length : 0
+                enrollments.filter((entry) => entry.status === "approved").length > 0
+                  ? total / enrollments.filter((entry) => entry.status === "approved").length
+                  : 0
               ).toFixed(2)}
             </p>
             <p className="page-subtitle">
@@ -241,6 +246,9 @@ function MyEnrollments() {
                     <span className="tag tag-level">
                       {enrollment.level}
                     </span>
+                    <span className={`tag tag-status tag-status-${enrollment.status}`}>
+                      {enrollment.status}
+                    </span>
                   </div>
 
 
@@ -269,6 +277,17 @@ function MyEnrollments() {
                       <strong>Enrolled on:</strong>{" "}
                       {formatDate(enrollment.enrolled_at)}
                     </li>
+                      {enrollment.reviewed_at && (
+                        <li>
+                          <strong>Decision date:</strong>{" "}
+                          {formatDate(enrollment.reviewed_at)}
+                        </li>
+                      )}
+                      {enrollment.status === "rejected" && enrollment.decision_note && (
+                        <li className="error-text">
+                          <strong>Reason:</strong> {enrollment.decision_note}
+                        </li>
+                      )}
 
                   </ul>
 
@@ -285,12 +304,14 @@ function MyEnrollments() {
                       type="button"
                       className="btn btn-danger btn-block"
                       onClick={() => handleCancelEnrollment(enrollment.id)}
-                      disabled={cancellingId === enrollment.id}
+                      disabled={cancellingId === enrollment.id || enrollment.status !== "pending"}
                     >
                       <FaTrash />
                       {cancellingId === enrollment.id
                         ? "Cancelling..."
-                        : "Cancel Enrollment"}
+                        : enrollment.status === "pending"
+                          ? "Cancel Request"
+                          : "Cancellation unavailable"}
                     </button>
                   </div>
 

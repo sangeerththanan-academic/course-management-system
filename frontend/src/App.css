@@ -678,6 +678,25 @@ a:hover {
   color: #92400e;
 }
 
+.tag-status {
+  text-transform: capitalize;
+}
+
+.tag-status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.tag-status-approved {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.tag-status-rejected {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
 .role-badge {
   display: inline-block;
 
@@ -1543,5 +1562,4 @@ textarea.input {
   }
 
 }
-
 

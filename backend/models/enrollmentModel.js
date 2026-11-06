@@ -6,8 +6,8 @@ const Enrollment = {
   async create(studentId, courseId) {
     const [result] = await db.execute(
       `INSERT INTO enrollments
-       (student_id, course_id)
-       VALUES (?, ?)`,
+       (student_id, course_id, status)
+       VALUES (?, ?, 'pending')`,
       [studentId, courseId]
     );
 
@@ -48,6 +48,10 @@ const Enrollment = {
       `SELECT
           e.id,
           e.enrolled_at,
+          e.status,
+          e.reviewed_by,
+          e.reviewed_at,
+          e.decision_note,
           c.id AS course_id,
           c.title,
           c.category,
@@ -69,20 +73,26 @@ const Enrollment = {
 
 
   // Get all students enrolled in a course
-  async getByCourse(courseId) {
+  async getByCourse(courseId, status = null) {
+    const statusClause = status ? "AND e.status = ?" : "";
+    const params = status ? [courseId, status] : [courseId];
     const [rows] = await db.execute(
       `SELECT
           e.id,
           e.enrolled_at,
+          e.status,
+          e.reviewed_by,
+          e.reviewed_at,
+          e.decision_note,
           u.id AS student_id,
           u.username,
           u.full_name
        FROM enrollments e
        JOIN users u
          ON e.student_id = u.id
-       WHERE e.course_id = ?
+       WHERE e.course_id = ? ${statusClause}
        ORDER BY e.enrolled_at DESC`,
-      [courseId]
+      params
     );
 
     return rows;
@@ -90,11 +100,17 @@ const Enrollment = {
 
 
   // Get all enrollments
-  async getAll() {
+  async getAll(status = null) {
+    const statusClause = status ? "WHERE e.status = ?" : "";
+    const params = status ? [status] : [];
     const [rows] = await db.execute(
       `SELECT
           e.id,
           e.enrolled_at,
+          e.status,
+          e.reviewed_by,
+          e.reviewed_at,
+          e.decision_note,
 
           u.id AS student_id,
           u.username,
@@ -113,7 +129,9 @@ const Enrollment = {
        JOIN courses c
          ON e.course_id = c.id
 
+       ${statusClause}
        ORDER BY e.enrolled_at DESC`
+      , params
     );
 
     return rows;

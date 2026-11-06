@@ -7,6 +7,7 @@ const {
   getMyEnrollments,
   getCourseEnrollments,
   getAllEnrollments,
+  updateEnrollmentStatus,
   deleteEnrollment,
   cancelEnrollment
 } = require("../controllers/enrollmentController");
@@ -51,6 +52,12 @@ router.get(
   getAllEnrollments
 );
 
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  updateEnrollmentStatus
+);
 
 // Admin (JWT + admin role required)
 // View students enrolled in a course
