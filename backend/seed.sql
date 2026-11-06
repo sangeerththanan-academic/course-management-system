@@ -33,7 +33,7 @@ VALUES
 
 -- Seed Courses
 INSERT INTO courses
-(title, category, level, duration, price, image, description)
+(title, category, level, duration, price, max_students, image, description)
 VALUES
 
 (
@@ -42,6 +42,7 @@ VALUES
     'Beginner',
     '8 Weeks',
     15000,
+    NULL,
     'https://placehold.co/300x180?text=HTML+%26+CSS',
     'Learn the fundamentals of HTML5 and CSS3 to build modern, responsive websites.'
 ),
@@ -52,6 +53,7 @@ VALUES
     'Intermediate',
     '10 Weeks',
     18000,
+    12,
     'https://placehold.co/300x180?text=JavaScript',
     'Master JavaScript, the DOM, events, ES6 features, and asynchronous programming.'
 ),
@@ -62,6 +64,7 @@ VALUES
     'Intermediate',
     '12 Weeks',
     22000,
+    NULL,
     'https://placehold.co/300x180?text=Node.js',
     'Build fast and scalable server-side applications using Node.js.'
 ),
@@ -72,6 +75,7 @@ VALUES
     'Advanced',
     '8 Weeks',
     20000,
+    NULL,
     'https://placehold.co/300x180?text=Express.js',
     'Create RESTful APIs and web applications using the Express framework.'
 ),
@@ -82,6 +86,7 @@ VALUES
     'Intermediate',
     '6 Weeks',
     17000,
+    NULL,
     'https://placehold.co/300x180?text=MongoDB',
     'Learn NoSQL database design, CRUD operations, and MongoDB integration.'
 ),
@@ -92,6 +97,7 @@ VALUES
     'Beginner',
     '6 Weeks',
     16000,
+    NULL,
     'https://placehold.co/300x180?text=MySQL',
     'Understand relational databases, SQL queries, joins, and database normalization.'
 ),
@@ -102,6 +108,7 @@ VALUES
     'Advanced',
     '10 Weeks',
     25000,
+    8,
     'https://placehold.co/300x180?text=React',
     'Develop modern single-page applications using React components and hooks.'
 ),
@@ -112,6 +119,7 @@ VALUES
     'Advanced',
     '20 Weeks',
     45000,
+    NULL,
     'https://placehold.co/300x180?text=Full+Stack',
     'Combine frontend, backend, databases, authentication, and deployment into one complete project.'
 );

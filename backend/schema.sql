@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS courses (
 
     price DECIMAL(10, 2) NOT NULL,
 
+    max_students INT NULL,
+
     image VARCHAR(500),
 
     description TEXT
@@ -62,3 +64,17 @@ CREATE TABLE IF NOT EXISTS enrollments (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+
+-- Enrollment approval workflow fields
+ALTER TABLE enrollments
+    ADD COLUMN status ENUM('pending', 'approved', 'rejected')
+        NOT NULL DEFAULT 'pending' AFTER enrolled_at,
+    ADD COLUMN reviewed_by INT NULL AFTER status,
+    ADD COLUMN reviewed_at TIMESTAMP NULL AFTER reviewed_by,
+    ADD COLUMN decision_note VARCHAR(500) NULL AFTER reviewed_at,
+    ADD CONSTRAINT fk_enrollments_reviewed_by
+        FOREIGN KEY (reviewed_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE;

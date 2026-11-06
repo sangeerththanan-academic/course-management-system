@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaTrash } from "react-icons/fa";
+import { FaCheck, FaTrash, FaTimes } from "react-icons/fa";
 
 import api from "../services/api";
 import Navbar from "../components/Navbar";
@@ -13,6 +13,7 @@ function ManageEnrollments() {
 
   // "" means "show every enrollment"
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   // The enrollments currently shown in the table
   const [enrollments, setEnrollments] = useState([]);
@@ -27,6 +28,8 @@ function ManageEnrollments() {
   // Changing this number tells the effect below to reload the table.
   // We use it after a delete so the table shows fresh data.
   const [reloadKey, setReloadKey] = useState(0);
+  const [processingId, setProcessingId] = useState(null);
+  const [rejectionReasons, setRejectionReasons] = useState({});
 
 
   // ---------- Load the course dropdown options (once) ----------
@@ -67,7 +70,9 @@ function ManageEnrollments() {
         if (selectedCourseId === "") {
 
           // ---- All enrollments ----
-          const response = await api.get("/enrollments");
+          const response = await api.get("/enrollments", {
+            params: selectedStatus ? { status: selectedStatus } : {},
+          });
 
           setEnrollments(response.data.enrollments);
           setSelectedCourse(null);
@@ -76,7 +81,8 @@ function ManageEnrollments() {
 
           // ---- Students enrolled in one course ----
           const response = await api.get(
-            `/enrollments/course/${selectedCourseId}`
+            `/enrollments/course/${selectedCourseId}`,
+            { params: selectedStatus ? { status: selectedStatus } : {} }
           );
 
           setEnrollments(response.data.enrollments);
@@ -102,7 +108,30 @@ function ManageEnrollments() {
 
     loadEnrollments();
 
-  }, [selectedCourseId, reloadKey]);
+  }, [selectedCourseId, selectedStatus, reloadKey]);
+
+  const handleStatusChange = async (enrollment, status, reason = "") => {
+    if (status === "rejected" && !reason.trim()) {
+      setError("A rejection reason is required.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setProcessingId(enrollment.id);
+    try {
+      const response = await api.patch(`/enrollments/${enrollment.id}/status`, {
+        status,
+        reason,
+      });
+      setSuccess(response.data.message);
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setError(error.response?.data?.message || "Could not update enrollment status.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
 
   // ---------- Delete an enrollment ----------
@@ -200,6 +229,24 @@ function ManageEnrollments() {
 
           </div>
 
+          <div className="form-group">
+            <label htmlFor="statusFilter">Show status</label>
+            <select
+              id="statusFilter"
+              className="input"
+              value={selectedStatus}
+              onChange={(event) => {
+                setSuccess("");
+                setSelectedStatus(event.target.value);
+              }}
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
         </div>
 
 
@@ -254,6 +301,7 @@ function ManageEnrollments() {
                       <th>Course</th>
                       <th>Category</th>
                       <th>Level</th>
+                      <th>Status</th>
                       <th>Enrolled On</th>
                       <th className="table-actions-column">Actions</th>
                     </tr>
@@ -265,6 +313,7 @@ function ManageEnrollments() {
                       <th>Student</th>
                       <th>Username</th>
                       <th>Enrolled On</th>
+                      <th>Status</th>
                       <th className="table-actions-column">Actions</th>
                     </tr>
 
@@ -294,22 +343,68 @@ function ManageEnrollments() {
                               {enrollment.level}
                             </span>
                           </td>
+                          <td>
+                            <span className={`tag tag-status tag-status-${enrollment.status}`}>
+                              {enrollment.status}
+                            </span>
+                          </td>
                         </>
                       )}
 
-
                       <td>{formatDate(enrollment.enrolled_at)}</td>
 
+                      {selectedCourseId !== "" && (
+                        <td>
+                          <span className={`tag tag-status tag-status-${enrollment.status}`}>
+                            {enrollment.status}
+                          </span>
+                        </td>
+                      )}
 
                       <td>
-                        <button
-                          type="button"
-                          className="btn btn-small btn-danger"
-                          onClick={() => handleDelete(enrollment)}
-                        >
-                          <FaTrash />
-                          Remove
-                        </button>
+                        <div className="table-actions">
+                          {enrollment.status === "pending" && (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn-small btn-primary"
+                                onClick={() => handleStatusChange(enrollment, "approved")}
+                                disabled={processingId === enrollment.id}
+                              >
+                                <FaCheck /> Approve
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-small btn-danger"
+                                onClick={() => handleStatusChange(
+                                  enrollment,
+                                  "rejected",
+                                  rejectionReasons[enrollment.id] || ""
+                                )}
+                                disabled={processingId === enrollment.id}
+                              >
+                                <FaTimes /> Reject
+                              </button>
+                              <input
+                                type="text"
+                                className="input input-small"
+                                placeholder="Rejection reason"
+                                value={rejectionReasons[enrollment.id] || ""}
+                                onChange={(event) => setRejectionReasons((current) => ({
+                                  ...current,
+                                  [enrollment.id]: event.target.value,
+                                }))}
+                              />
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-small btn-danger"
+                            onClick={() => handleDelete(enrollment)}
+                          >
+                            <FaTrash /> Remove
+                          </button>
+                        </div>
                       </td>
 
                     </tr>
@@ -334,4 +429,3 @@ function ManageEnrollments() {
 }
 
 export default ManageEnrollments;
-

@@ -17,6 +17,17 @@ import CourseCard from "../components/CourseCard";
 
 import heroImage from "../assets/hero.png";
 
+function formatAvailability(course) {
+  if (course.max_students === null || course.max_students === undefined) {
+    return "Unlimited";
+  }
+
+  if (course.is_full) {
+    return "Course Full";
+  }
+
+  return `${course.enrolled_count ?? 0} / ${course.max_students} students`;
+}
 
 function Home() {
 
@@ -253,6 +264,22 @@ function Home() {
               </p>
             </div>
 
+          </div>
+
+          <div className="section-card" style={{ marginTop: "2rem" }}>
+          <h3 className="section-title" style={{ marginBottom: "1rem" }}>Course availability</h3>
+          <div className="course-grid">
+            {previewCourses.map((course) => (
+              <div key={course.id} className="course-card mini-availability-card">
+                <div className="course-card-body">
+                  <h3 className="course-card-title">{course.title}</h3>
+                  <p className="course-card-summary">
+                    <strong>Availability:</strong> {formatAvailability(course)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
           </div>
 
         </div>
