@@ -17,9 +17,11 @@ app.use(express.json());
 // API Routes
 const authRoutes = require("./routes/authRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
+const roleMiddleware = require("./middleware/roleMiddleware");
 const userRoutes = require("./routes/userRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
+const auditRoutes = require("./routes/auditRoutes");
 
 // Public auth routes (login)
 app.use("/api/auth", authRoutes);
@@ -30,6 +32,7 @@ app.use("/api/courses", courseRoutes);
 // Protected routes - require valid JWT
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/enrollments", authMiddleware, enrollmentRoutes);
+app.use("/api/audit-logs", authMiddleware, roleMiddleware(["admin"]), auditRoutes);
 
 
 // Start Server

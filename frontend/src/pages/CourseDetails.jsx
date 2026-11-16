@@ -20,6 +20,15 @@ function CourseDetails() {
   const [success, setSuccess] = useState("");
 
   const [enrolling, setEnrolling] = useState(false);
+  const [enrollment, setEnrollment] = useState(null);
+
+  const availabilityText = course
+    ? (course.max_students === null || course.max_students === undefined
+      ? "Unlimited"
+      : course.is_full
+        ? "Course Full"
+        : `${course.enrolled_count ?? 0} / ${course.max_students} students`)
+    : "";
 
 
   // Read the login state from localStorage.
@@ -36,8 +45,15 @@ function CourseDetails() {
       try {
 
         const response = await api.get(`/courses/${id}`);
-
         setCourse(response.data.course);
+
+        if (studentLoggedIn) {
+          const enrollmentsResponse = await api.get("/enrollments/my");
+          const currentEnrollment = enrollmentsResponse.data.enrollments?.find(
+            (entry) => Number(entry.course_id) === Number(id)
+          );
+          setEnrollment(currentEnrollment || null);
+        }
 
       } catch (error) {
 
@@ -55,7 +71,7 @@ function CourseDetails() {
 
     getCourse();
 
-  }, [id]);
+  }, [id, studentLoggedIn]);
 
 
   // ---------- Enroll ----------
@@ -73,12 +89,13 @@ function CourseDetails() {
       });
 
       setSuccess(response.data.message);
+      setEnrollment({ status: "pending" });
 
     } catch (error) {
 
       // 409 = already enrolled. This is expected, not a crash.
       if (error.response?.status === 409) {
-
+        setEnrollment((current) => current || { status: "approved" });
         setError(
           "You are already enrolled in this course. You can see it in My Enrollments."
         );
@@ -201,6 +218,11 @@ function CourseDetails() {
                 <dd className="details-price">Rs. {course.price}</dd>
               </div>
 
+              <div>
+                <dt>Availability</dt>
+                <dd>{availabilityText}</dd>
+              </div>
+
             </dl>
 
 
@@ -238,15 +260,32 @@ function CourseDetails() {
               {/* Logged in as a student: show the Enroll button */}
               {studentLoggedIn && (
                 <>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-lg"
-                    onClick={handleEnroll}
-                    disabled={enrolling}
-                  >
-                    <FaShoppingCart />
-                    {enrolling ? "Enrolling..." : "Enroll Now"}
-                  </button>
+                  {course.is_full && (!enrollment || enrollment.status === "rejected") ? (
+                    <p className="error">Course Full. No remaining seats are available.</p>
+                  ) : !enrollment || enrollment.status === "rejected" ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-lg"
+                      onClick={handleEnroll}
+                      disabled={enrolling || course.is_full}
+                    >
+                      <FaShoppingCart />
+                      {enrolling
+                        ? "Submitting..."
+                        : enrollment?.status === "rejected"
+                          ? "Request Again"
+                          : "Request Enrollment"}
+                    </button>
+                  ) : (
+                    <p className={enrollment.status === "approved" ? "success" : "notice"}>
+                      {enrollment.status === "approved"
+                        ? "You are enrolled in this course."
+                        : "Request Pending Approval"}
+                    </p>
+                  )}
+                  {enrollment?.status === "rejected" && enrollment.decision_note && (
+                    <p className="error">Rejected: {enrollment.decision_note}</p>
+                  )}
 
                   <Link to="/my-enrollments" className="btn btn-outline">
                     <FaGraduationCap />
@@ -286,4 +325,3 @@ function CourseDetails() {
 }
 
 export default CourseDetails;
-

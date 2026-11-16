@@ -7,7 +7,9 @@ const {
   getMyEnrollments,
   getCourseEnrollments,
   getAllEnrollments,
+  updateEnrollmentStatus,
   deleteEnrollment,
+  cancelEnrollment
 } = require("../controllers/enrollmentController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -33,6 +35,13 @@ router.get(
   getMyEnrollments
 );
 
+router.delete(
+  "/my/:id",
+  authMiddleware,
+  roleMiddleware(["student"]),
+  cancelEnrollment
+);
+
 
 // Admin (JWT + admin role required)
 // View all enrollments
@@ -43,6 +52,12 @@ router.get(
   getAllEnrollments
 );
 
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  updateEnrollmentStatus
+);
 
 // Admin (JWT + admin role required)
 // View students enrolled in a course

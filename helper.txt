@@ -1,0 +1,10 @@
+.toLowerCase() function change string data in lower case
+
+const title = "ABC"
+let asd =title.toLowerCase()
+
+console.log(asd)
+
+output =abc
+
+__________________________________________________________________________
