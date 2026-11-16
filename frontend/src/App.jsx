@@ -9,9 +9,11 @@ import CourseDetails from "./pages/CourseDetails";
 // ---------- Student pages ----------
 import StudentDashboard from "./pages/StudentDashboard";
 import MyEnrollments from "./pages/MyEnrollments";
+import Notifications from "./pages/Notifications";
 
 // ---------- Admin pages ----------
 import AdminDashboard from "./pages/AdminDashboard";
+import AuditLog from "./pages/AuditLog";
 import ManageCourses from "./pages/ManageCourses";
 import ManageEnrollments from "./pages/ManageEnrollments";
 
@@ -60,6 +62,15 @@ function App() {
           }
         />
 
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+
 
        {/* ADMIN ROUTES - login required, role = admin */}
 
@@ -86,6 +97,15 @@ function App() {
           element={
             <ProtectedRoute role="admin">
               <ManageEnrollments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <ProtectedRoute role="admin">
+              <AuditLog />
             </ProtectedRoute>
           }
         />

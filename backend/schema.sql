@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS courses (
 
     price DECIMAL(10, 2) NOT NULL,
 
+    max_students INT NULL,
+
     image VARCHAR(500),
 
     description TEXT
@@ -59,6 +61,60 @@ CREATE TABLE IF NOT EXISTS enrollments (
     -- Course
     FOREIGN KEY (course_id)
         REFERENCES courses(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+
+-- Enrollment approval workflow fields
+ALTER TABLE enrollments
+    ADD COLUMN status ENUM('pending', 'approved', 'rejected')
+        NOT NULL DEFAULT 'pending' AFTER enrolled_at,
+    ADD COLUMN reviewed_by INT NULL AFTER status,
+    ADD COLUMN reviewed_at TIMESTAMP NULL AFTER reviewed_by,
+    ADD COLUMN decision_note VARCHAR(500) NULL AFTER reviewed_at,
+    ADD CONSTRAINT fk_enrollments_reviewed_by
+        FOREIGN KEY (reviewed_by)
+        REFERENCES users(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE;
+
+
+-- Audit logs table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    actor_id INT NOT NULL,
+    actor_username VARCHAR(50) NOT NULL,
+    actor_role ENUM('admin', 'student') NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INT NOT NULL,
+    previous_data JSON NULL,
+    new_data JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_audit_entity (entity_type, entity_id),
+    KEY idx_audit_actor (actor_id, actor_username),
+    KEY idx_audit_action (action),
+    KEY idx_audit_created_at (created_at)
+);
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    internal_link VARCHAR(255) NOT NULL DEFAULT '/',
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_notifications_user (user_id),
+    KEY idx_notifications_read (is_read),
+    KEY idx_notifications_created_at (created_at),
+    CONSTRAINT fk_notifications_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );

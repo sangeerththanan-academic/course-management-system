@@ -1,5 +1,30 @@
 const Course = require("../models/courseModel");
+const Enrollment = require("../models/enrollmentModel");
 const User = require("../models/userModel");
+const validateCourse = require("../helpers/validateCourse");
+const { createAuditRecord } = require("../services/auditService");
+const { notifyUsers } = require("../services/notificationService");
+
+const ensureCapacityIsValidForUpdate = async (courseId, newMaxStudents) => {
+  if (newMaxStudents === null || newMaxStudents === undefined) {
+    return;
+  }
+
+  const currentCourse = await Course.getById(courseId);
+
+  if (!currentCourse) {
+    return;
+  }
+
+  const approvedEnrollmentCount = Number(currentCourse.enrolled_count ?? 0);
+
+  if (newMaxStudents < approvedEnrollmentCount) {
+    throw Object.assign(new Error("Maximum students cannot be lower than the current approved enrollment count"), {
+      statusCode: 400,
+      field: "max_students",
+    });
+  }
+};
 
 // Get all courses
 const getAllCourses = async (req, res) => {
@@ -52,31 +77,34 @@ const getCourseById = async (req, res) => {
 // Create course
 const createCourse = async (req, res) => {
   try {
-    const {
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
-    } = req.body;
+    const validation = validateCourse(req.body);
 
-    // Basic validation
-    if (!title || !category || !level) {
+    if (Object.keys(validation.errors).length > 0) {
       return res.status(400).json({
-        message: "Title, category and level are required",
+        message: "Validation failed",
+        errors: validation.errors,
       });
     }
 
-    const courseId = await Course.create({
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
+    const duplicateCourse = await Course.findByTitle(validation.data.title);
+
+    if (duplicateCourse) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: {
+          title: "A course with this title already exists",
+        },
+      });
+    }
+
+    const courseId = await Course.create(validation.data);
+
+    await createAuditRecord({
+      req,
+      action: "course_created",
+      entityType: "course",
+      entityId: courseId,
+      newData: { id: courseId, ...validation.data },
     });
 
     res.status(201).json({
@@ -99,17 +127,15 @@ const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const {
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
-    } = req.body;
+    const validation = validateCourse(req.body);
 
-    // Check if course exists
+    if (Object.keys(validation.errors).length > 0) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.errors,
+      });
+    }
+
     const existingCourse = await Course.getById(id);
 
     if (!existingCourse) {
@@ -118,18 +144,55 @@ const updateCourse = async (req, res) => {
       });
     }
 
-    await Course.update(id, {
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
+    const duplicateCourse = await Course.findByTitle(validation.data.title, id);
+
+    if (duplicateCourse) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: {
+          title: "A course with this title already exists",
+        },
+      });
+    }
+
+    try {
+      await ensureCapacityIsValidForUpdate(id, validation.data.max_students);
+    } catch (error) {
+      if (error?.statusCode === 400) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: {
+            max_students: "Maximum students cannot be lower than the current approved enrollment count",
+          },
+        });
+      }
+
+      throw error;
+    }
+
+    const previousCourse = { ...existingCourse };
+
+    await Course.update(id, validation.data);
+
+    const updatedCourse = await Course.getById(id);
+
+    await createAuditRecord({
+      req,
+      action: "course_updated",
+      entityType: "course",
+      entityId: Number(id),
+      previousData: previousCourse,
+      newData: updatedCourse,
     });
 
-    // Get updated course
-    const updatedCourse = await Course.getById(id);
+    const enrolledStudents = (await Enrollment.getByCourse(id, "approved")).map((entry) => entry.student_id);
+
+    await notifyUsers(enrolledStudents, {
+      notificationType: "course_updated",
+      title: "Course updated",
+      message: `The course "${updatedCourse?.title || previousCourse.title}" has been updated. Please review the latest details before continuing.`,
+      internalLink: `/courses/${id}`,
+    });
 
     res.status(200).json({
       message: "Course updated successfully",
@@ -151,7 +214,6 @@ const deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if course exists
     const existingCourse = await Course.getById(id);
 
     if (!existingCourse) {
@@ -160,7 +222,24 @@ const deleteCourse = async (req, res) => {
       });
     }
 
+    const enrolledStudents = (await Enrollment.getByCourse(id, "approved")).map((entry) => entry.student_id);
+
     await Course.delete(id);
+
+    await createAuditRecord({
+      req,
+      action: "course_deleted",
+      entityType: "course",
+      entityId: Number(id),
+      previousData: { ...existingCourse },
+    });
+
+    await notifyUsers(enrolledStudents, {
+      notificationType: "course_deleted",
+      title: "Course removed",
+      message: `The course "${existingCourse.title}" has been removed. Please check your enrollment list for updated options.`,
+      internalLink: "/my-enrollments",
+    });
 
     res.status(200).json({
       message: "Course deleted successfully",

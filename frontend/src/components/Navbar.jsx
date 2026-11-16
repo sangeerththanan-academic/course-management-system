@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   FaBars,
+  FaBell,
   FaBook,
   FaChartBar,
+  FaHistory,
   FaHome,
   FaSignInAlt,
   FaSignOutAlt,
@@ -14,6 +16,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 
+import api from "../services/api";
 import { clearAuth, getUser, isLoggedIn } from "../services/auth";
 
 
@@ -24,10 +27,42 @@ function Navbar() {
 
   // Mobile menu open / closed
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Read the current user from localStorage on every render
   const loggedIn = isLoggedIn();
   const user = getUser();
+
+  useEffect(() => {
+    if (!loggedIn || !user) {
+      setUnreadCount(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.get("/notifications/unread-count");
+
+        if (!cancelled) {
+          setUnreadCount(response.data.unreadCount || 0);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    fetchUnreadCount();
+    const intervalId = window.setInterval(fetchUnreadCount, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [loggedIn, user?.id]);
 
   // Close the mobile menu whenever a link is clicked
   const closeMenu = () => setMenuOpen(false);
@@ -36,6 +71,7 @@ function Navbar() {
 
     // Remove token + user from localStorage
     clearAuth();
+    setUnreadCount(0);
 
     closeMenu();
 
@@ -111,6 +147,18 @@ function Navbar() {
             </>
           )}
 
+          {loggedIn && (
+            <NavLink to="/notifications" className={linkClass} onClick={closeMenu}>
+              <span className="notification-bell-wrap">
+                <FaBell />
+                {unreadCount > 0 && (
+                  <span className="notification-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                )}
+              </span>
+              Notifications
+            </NavLink>
+          )}
+
 
           {/* ---------- Admin menu ---------- */}
 
@@ -137,6 +185,15 @@ function Navbar() {
               >
                 <FaUsers />
                 Manage Enrollments
+              </NavLink>
+
+              <NavLink
+                to="/admin/audit-logs"
+                className={linkClass}
+                onClick={closeMenu}
+              >
+                <FaHistory />
+                Audit Logs
               </NavLink>
             </>
           )}

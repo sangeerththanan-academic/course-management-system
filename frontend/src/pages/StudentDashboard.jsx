@@ -62,6 +62,12 @@ function StudentDashboard() {
 
   // Only show the 3 most recent enrollments on the dashboard
   const recentEnrollments = enrollments.slice(0, 3);
+  const approvedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "approved"
+  );
+  const pendingEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "pending"
+  );
 
 
   const formatDate = (value) => {
@@ -109,10 +115,19 @@ function StudentDashboard() {
 
           <div className="dashboard-card">
             <span className="dashboard-card-value">
-              {loading ? "..." : enrollments.length}
+              {loading ? "..." : approvedEnrollments.length}
             </span>
             <span className="dashboard-card-label">
-              My Enrolled Courses
+              Approved Courses
+            </span>
+          </div>
+
+          <div className="dashboard-card">
+            <span className="dashboard-card-value">
+              {loading ? "..." : pendingEnrollments.length}
+            </span>
+            <span className="dashboard-card-label">
+              Pending Requests
             </span>
           </div>
 
@@ -169,6 +184,7 @@ function StudentDashboard() {
                     <th>Course</th>
                     <th>Category</th>
                     <th>Level</th>
+                    <th>Status</th>
                     <th>Enrolled On</th>
                   </tr>
                 </thead>
@@ -183,6 +199,11 @@ function StudentDashboard() {
                       </td>
                       <td>{enrollment.category}</td>
                       <td>{enrollment.level}</td>
+                      <td>
+                        <span className={`tag tag-status tag-status-${enrollment.status}`}>
+                          {enrollment.status}
+                        </span>
+                      </td>
                       <td>{formatDate(enrollment.enrolled_at)}</td>
                     </tr>
                   ))}
@@ -227,5 +248,4 @@ function StudentDashboard() {
 }
 
 export default StudentDashboard;
-
 

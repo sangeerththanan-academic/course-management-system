@@ -1,13 +1,29 @@
 import { Link } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
 
+function getAvailabilityDisplay(course) {
+  const enrolledCount = Number(course?.enrolled_count ?? 0);
+  const maxStudents = course?.max_students === null || course?.max_students === undefined
+    ? null
+    : Number(course.max_students);
+
+  if (maxStudents === null) {
+    return "Unlimited";
+  }
+
+  if (course?.is_full) {
+    return "Course Full";
+  }
+
+  return `${enrolledCount} / ${maxStudents} students`;
+}
+
 function CourseCard({ course }) {
 
   return (
 
     <article className="course-card">
 
-      {/* Course image from the database */}
       <img
         src={course.image}
         alt={course.title}
@@ -34,7 +50,6 @@ function CourseCard({ course }) {
         </h3>
 
 
-        {/* Short summary - we trim the long description */}
         <p className="course-card-summary">
           {course.description?.slice(0, 110)}
           {course.description?.length > 110 ? "..." : ""}
@@ -48,6 +63,10 @@ function CourseCard({ course }) {
 
           <li>
             <strong>Price:</strong> Rs. {course.price}
+          </li>
+
+          <li>
+            <strong>Availability:</strong> {getAvailabilityDisplay(course)}
           </li>
         </ul>
 
