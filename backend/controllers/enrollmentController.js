@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const Enrollment = require("../models/enrollmentModel");
 const Course = require("../models/courseModel");
+const { createAuditRecord } = require("../services/auditService");
 
 const VALID_STATUSES = new Set(["pending", "approved", "rejected"]);
 
@@ -179,7 +180,27 @@ const updateEnrollmentStatus = async (req, res) => {
        WHERE id = ? AND status = 'pending'`,
       [status, reviewerId, status === "rejected" ? String(reason).trim() : null, id]
     );
+
     await connection.commit();
+
+    await createAuditRecord({
+      req,
+      action: status === "approved" ? "enrollment_approved" : "enrollment_rejected",
+      entityType: "enrollment",
+      entityId: Number(id),
+      previousData: {
+        ...enrollment,
+        status: "pending",
+      },
+      newData: {
+        ...enrollment,
+        status,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        decision_note: status === "rejected" ? String(reason).trim() : null,
+      },
+    });
+
     return res.status(200).json({
       message: `Enrollment ${status} successfully`,
     });
@@ -295,6 +316,14 @@ const deleteEnrollment = async (req, res) => {
       });
     }
 
+    const existingEnrollment = await Enrollment.findById(id);
+
+    if (!existingEnrollment) {
+      return res.status(404).json({
+        message: "Enrollment not found",
+      });
+    }
+
     const result = await Enrollment.delete(id);
 
     if (result.affectedRows === 0) {
@@ -302,6 +331,14 @@ const deleteEnrollment = async (req, res) => {
         message: "Enrollment not found",
       });
     }
+
+    await createAuditRecord({
+      req,
+      action: "enrollment_deleted",
+      entityType: "enrollment",
+      entityId: Number(id),
+      previousData: { ...existingEnrollment },
+    });
 
     res.status(200).json({
       message: "Enrollment deleted successfully",
@@ -358,6 +395,14 @@ const cancelEnrollment = async (req, res) => {
         message: "Enrollment not found",
       });
     }
+
+    await createAuditRecord({
+      req,
+      action: "enrollment_cancelled",
+      entityType: "enrollment",
+      entityId: Number(id),
+      previousData: { ...enrollment },
+    });
 
     res.status(200).json({
       message: "Enrollment cancelled successfully",

@@ -78,3 +78,23 @@ ALTER TABLE enrollments
         REFERENCES users(id)
         ON DELETE SET NULL
         ON UPDATE CASCADE;
+
+
+-- Audit logs table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    actor_id INT NOT NULL,
+    actor_username VARCHAR(50) NOT NULL,
+    actor_role ENUM('admin', 'student') NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INT NOT NULL,
+    previous_data JSON NULL,
+    new_data JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_audit_entity (entity_type, entity_id),
+    KEY idx_audit_actor (actor_id, actor_username),
+    KEY idx_audit_action (action),
+    KEY idx_audit_created_at (created_at)
+);

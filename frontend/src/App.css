@@ -1443,6 +1443,58 @@ textarea.input {
 
 
 /* =========================================
+   Audit log page
+   ========================================= */
+
+.audit-page .filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.audit-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.audit-table td,
+.audit-table th {
+  min-width: 130px;
+}
+
+.audit-data-cell {
+  max-width: 260px;
+  min-width: 220px;
+}
+
+.audit-data-cell pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8rem;
+  font-family: Consolas, monospace;
+  background-color: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.audit-meta {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--color-muted);
+}
+
+/* =========================================
    16. Responsive rules
    ========================================= */
 

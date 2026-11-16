@@ -12,6 +12,7 @@ import MyEnrollments from "./pages/MyEnrollments";
 
 // ---------- Admin pages ----------
 import AdminDashboard from "./pages/AdminDashboard";
+import AuditLog from "./pages/AuditLog";
 import ManageCourses from "./pages/ManageCourses";
 import ManageEnrollments from "./pages/ManageEnrollments";
 
@@ -86,6 +87,15 @@ function App() {
           element={
             <ProtectedRoute role="admin">
               <ManageEnrollments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <ProtectedRoute role="admin">
+              <AuditLog />
             </ProtectedRoute>
           }
         />

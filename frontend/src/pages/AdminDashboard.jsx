@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   FaBook,
   FaChartBar,
+  FaHistory,
   FaSearch,
   FaUsers,
 } from "react-icons/fa";
@@ -249,6 +250,11 @@ function AdminDashboard() {
             <Link to="/admin/enrollments" className="quick-action">
               <span className="quick-action-icon"><FaUsers /></span>
               <span>View and remove enrollments</span>
+            </Link>
+
+            <Link to="/admin/audit-logs" className="quick-action">
+              <span className="quick-action-icon"><FaHistory /></span>
+              <span>Review audit logs</span>
             </Link>
 
             <Link to="/courses" className="quick-action">

@@ -1,6 +1,7 @@
 const Course = require("../models/courseModel");
 const User = require("../models/userModel");
 const validateCourse = require("../helpers/validateCourse");
+const { createAuditRecord } = require("../services/auditService");
 
 const ensureCapacityIsValidForUpdate = async (courseId, newMaxStudents) => {
   if (newMaxStudents === null || newMaxStudents === undefined) {
@@ -96,6 +97,14 @@ const createCourse = async (req, res) => {
 
     const courseId = await Course.create(validation.data);
 
+    await createAuditRecord({
+      req,
+      action: "course_created",
+      entityType: "course",
+      entityId: courseId,
+      newData: { id: courseId, ...validation.data },
+    });
+
     res.status(201).json({
       message: "Course created successfully",
       courseId,
@@ -159,9 +168,20 @@ const updateCourse = async (req, res) => {
       throw error;
     }
 
+    const previousCourse = { ...existingCourse };
+
     await Course.update(id, validation.data);
 
     const updatedCourse = await Course.getById(id);
+
+    await createAuditRecord({
+      req,
+      action: "course_updated",
+      entityType: "course",
+      entityId: Number(id),
+      previousData: previousCourse,
+      newData: updatedCourse,
+    });
 
     res.status(200).json({
       message: "Course updated successfully",
@@ -192,6 +212,14 @@ const deleteCourse = async (req, res) => {
     }
 
     await Course.delete(id);
+
+    await createAuditRecord({
+      req,
+      action: "course_deleted",
+      entityType: "course",
+      entityId: Number(id),
+      previousData: { ...existingCourse },
+    });
 
     res.status(200).json({
       message: "Course deleted successfully",
