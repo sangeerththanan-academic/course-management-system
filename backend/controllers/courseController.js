@@ -1,7 +1,9 @@
 const Course = require("../models/courseModel");
+const Enrollment = require("../models/enrollmentModel");
 const User = require("../models/userModel");
 const validateCourse = require("../helpers/validateCourse");
 const { createAuditRecord } = require("../services/auditService");
+const { notifyUsers } = require("../services/notificationService");
 
 const ensureCapacityIsValidForUpdate = async (courseId, newMaxStudents) => {
   if (newMaxStudents === null || newMaxStudents === undefined) {
@@ -183,6 +185,15 @@ const updateCourse = async (req, res) => {
       newData: updatedCourse,
     });
 
+    const enrolledStudents = (await Enrollment.getByCourse(id, "approved")).map((entry) => entry.student_id);
+
+    await notifyUsers(enrolledStudents, {
+      notificationType: "course_updated",
+      title: "Course updated",
+      message: `The course "${updatedCourse?.title || previousCourse.title}" has been updated. Please review the latest details before continuing.`,
+      internalLink: `/courses/${id}`,
+    });
+
     res.status(200).json({
       message: "Course updated successfully",
       course: updatedCourse,
@@ -211,6 +222,8 @@ const deleteCourse = async (req, res) => {
       });
     }
 
+    const enrolledStudents = (await Enrollment.getByCourse(id, "approved")).map((entry) => entry.student_id);
+
     await Course.delete(id);
 
     await createAuditRecord({
@@ -219,6 +232,13 @@ const deleteCourse = async (req, res) => {
       entityType: "course",
       entityId: Number(id),
       previousData: { ...existingCourse },
+    });
+
+    await notifyUsers(enrolledStudents, {
+      notificationType: "course_deleted",
+      title: "Course removed",
+      message: `The course "${existingCourse.title}" has been removed. Please check your enrollment list for updated options.`,
+      internalLink: "/my-enrollments",
     });
 
     res.status(200).json({

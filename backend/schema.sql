@@ -98,3 +98,23 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     KEY idx_audit_action (action),
     KEY idx_audit_created_at (created_at)
 );
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    internal_link VARCHAR(255) NOT NULL DEFAULT '/',
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_notifications_user (user_id),
+    KEY idx_notifications_read (is_read),
+    KEY idx_notifications_created_at (created_at),
+    CONSTRAINT fk_notifications_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);

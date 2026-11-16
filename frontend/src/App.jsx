@@ -9,6 +9,7 @@ import CourseDetails from "./pages/CourseDetails";
 // ---------- Student pages ----------
 import StudentDashboard from "./pages/StudentDashboard";
 import MyEnrollments from "./pages/MyEnrollments";
+import Notifications from "./pages/Notifications";
 
 // ---------- Admin pages ----------
 import AdminDashboard from "./pages/AdminDashboard";
@@ -57,6 +58,15 @@ function App() {
           element={
             <ProtectedRoute role="student">
               <MyEnrollments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
             </ProtectedRoute>
           }
         />

@@ -2,6 +2,7 @@ const db = require("../config/db");
 const Enrollment = require("../models/enrollmentModel");
 const Course = require("../models/courseModel");
 const { createAuditRecord } = require("../services/auditService");
+const { notifyAdmins, notifyUsers } = require("../services/notificationService");
 
 const VALID_STATUSES = new Set(["pending", "approved", "rejected"]);
 
@@ -82,6 +83,16 @@ const enrollInCourse = async (req, res) => {
       );
 
       await connection.commit();
+
+      const courseName = lockedCourse.title || "this course";
+      const studentDisplayName = req.user.full_name || req.user.username || "A student";
+
+      await notifyAdmins({
+        notificationType: "enrollment_request",
+        title: "New enrollment request",
+        message: `${studentDisplayName} submitted an enrollment request for ${courseName}.`,
+        internalLink: "/admin/enrollments",
+      });
 
       res.status(201).json({
         message: "Enrollment request submitted for approval",
@@ -199,6 +210,19 @@ const updateEnrollmentStatus = async (req, res) => {
         reviewed_at: new Date().toISOString(),
         decision_note: status === "rejected" ? String(reason).trim() : null,
       },
+    });
+
+    const course = await Course.getById(enrollment.course_id);
+    const courseTitle = course?.title || "this course";
+    const reasonText = status === "rejected" ? ` Reason: ${String(reason).trim()}` : "";
+
+    await notifyUsers([enrollment.student_id], {
+      notificationType: status === "approved" ? "enrollment_approved" : "enrollment_rejected",
+      title: status === "approved" ? "Enrollment approved" : "Enrollment rejected",
+      message: status === "approved"
+        ? `Your enrollment request for ${courseTitle} has been approved.`
+        : `Your enrollment request for ${courseTitle} has been rejected.${reasonText}`,
+      internalLink: "/my-enrollments",
     });
 
     return res.status(200).json({
@@ -338,6 +362,15 @@ const deleteEnrollment = async (req, res) => {
       entityType: "enrollment",
       entityId: Number(id),
       previousData: { ...existingEnrollment },
+    });
+
+    const course = await Course.getById(existingEnrollment.course_id);
+
+    await notifyUsers([existingEnrollment.student_id], {
+      notificationType: "enrollment_removed",
+      title: "Enrollment removed",
+      message: `Your enrollment in ${course?.title || "the selected course"} was removed by an administrator.`,
+      internalLink: "/my-enrollments",
     });
 
     res.status(200).json({

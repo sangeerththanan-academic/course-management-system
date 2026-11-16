@@ -22,6 +22,7 @@ const userRoutes = require("./routes/userRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
 const auditRoutes = require("./routes/auditRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 // Public auth routes (login)
 app.use("/api/auth", authRoutes);
@@ -33,6 +34,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/enrollments", authMiddleware, enrollmentRoutes);
 app.use("/api/audit-logs", authMiddleware, roleMiddleware(["admin"]), auditRoutes);
+app.use("/api/notifications", authMiddleware, notificationRoutes);
 
 
 // Start Server
